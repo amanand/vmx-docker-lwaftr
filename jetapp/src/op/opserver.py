@@ -21,23 +21,3 @@ class OpServer(xmlrpc.XMLRPC):
             return None
         return output
 
-
-def Main():
-    try:
-        # log device initialized successfully
-        print "Device initialized for the configuration updates"
-        opw = OpServer()
-        reactor.listenTCP(9191, server.Site(opw))
-        print ("Starting the reactor")
-        reactor.run()
-
-    except Exception as e:
-        # log device initialization failed
-        LOG.critical("JET app exiting due to exception: %s" %str(e.message))
-        os._exit(0)
-    return
-
-
-
-if __name__ == '__main__':
-    Main()
