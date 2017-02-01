@@ -3,12 +3,11 @@ __copyright__ = "Copyright (c) 2017 Juniper Networks, Inc."
 
 import sys
 import os
-#from jnpr.jet.JetHandler import *
 from sanity import Sanity
 from conf.callback import SnabbCallback
 from mylogging import LOG
 from grpc.beta import implementations
-import op.protos.authentication_service_pb2 as authentication_service_pb2
+import conf.protos.authentication_service_pb2 as authentication_service_pb2
 import random, string
 from app_globals import *
 from notification.notification import NotificationClient

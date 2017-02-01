@@ -2,8 +2,8 @@ __author__ = "Amish Anand"
 __copyright__ = "Copyright (c) 2017 Juniper Networks, Inc."
 
 from mylogging import LOG
-import op.protos.mgd_service_pb2 as mgd_service_pb2
-import op.protos.openconfig_service_pb2 as openconfig_service_pb2
+import conf.protos.mgd_service_pb2 as mgd_service_pb2
+import conf.protos.openconfig_service_pb2 as openconfig_service_pb2
 import common.app_globals
 
 
