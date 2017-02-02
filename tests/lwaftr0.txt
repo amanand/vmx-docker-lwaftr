@@ -41,7 +41,7 @@ system {
         ssh;
         extension-service {
             request-response {
-                thrift {
+                grpc {
                     clear-text;
                 }
             }
