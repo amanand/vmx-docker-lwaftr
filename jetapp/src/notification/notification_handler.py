@@ -49,7 +49,7 @@ class NotifierMqtt(CreateTopic):
         self.on_disconnectCBSet = False
         self.topics_subscribed = []
 
-    def on_stream_message_cb (self, client, obj, msg):
+    def on_stream_message_cb(self, client, obj, msg):
         """
         This callback function will be used for Thrift streaming messages
         and won't be encoded in JSON Format but the thrift wire format.
@@ -61,7 +61,7 @@ class NotifierMqtt(CreateTopic):
         @param msg: an instance of Message. This is a class with members topic, payload, qos, retain
 
         """
-        
+
         payload = msg.payload
         topic = msg.topic
 
@@ -96,7 +96,8 @@ class NotifierMqtt(CreateTopic):
             LOG.info('Received payload: %s' % payload)
         if len(payload) != end:
             LOG.info('Received event has additional invalid JSON format')
-            LOG.info('It has the following additional content: %s' % payload[end:])
+            LOG.info('It has the following additional content: %s' %
+                     payload[end:])
         callback_called = False
         for cbs in self.handlers:
             if cbs != '#':
@@ -125,10 +126,11 @@ class NotifierMqtt(CreateTopic):
         topic = subscriptionType.topic
         self.mqtt_client.subscribe(topic, qos)
         subscriptionType.subscribed = 1
-        
+
         if(handler):
             self.handlers[topic].add(handler)
-        LOG.info('Successfully subscribed to event:%s' %subscriptionType.topic)
+        LOG.info('Successfully subscribed to event:%s' %
+                 subscriptionType.topic)
 
     def Unsubscribe(self, subscriptionType=None):
         """
@@ -149,18 +151,20 @@ class NotifierMqtt(CreateTopic):
             message = 'Invalid subscription topic: ' + subscriptionType
             LOG.info(message)
             raise Exception(message)
-    
+
         else:
             for item in self.topics_subscribed:
                 if (item == subscriptionType.topic and subscriptionType.subscribed == 1):
                     self.mqtt_client.unsubscribe(subscriptionType.topic)
                     self.mqtt_client.unsubscribe(subscriptionType.topic)
                     self.handlers.pop(str(subscriptionType.topic), None)
-                    LOG.info('Successfully unsubscribed %s' % subscriptionType.topic)
+                    LOG.info('Successfully unsubscribed %s' %
+                             subscriptionType.topic)
                     return 0
-    
+
             # Failed case
-            LOG.error('You have not subscribed to %s. Failed to unsubscribe' % subscriptionType.topic)
+            LOG.error('You have not subscribed to %s. Failed to unsubscribe' %
+                      subscriptionType.topic)
             return -1
 
     def SetCallbackOnConnect(self, cb):

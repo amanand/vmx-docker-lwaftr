@@ -6,9 +6,8 @@ We need to check whether there are existing config files available for Snabb or 
 If they are present, then we need to start the snabb instances based on the configuration
 """
 
+
 def snabbStartupConfig():
     # Check if the files are present or not.
     # Set the parameters and start the snabb application
     pass
-
-

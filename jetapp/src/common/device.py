@@ -9,7 +9,8 @@ from conf.callback import SnabbCallback
 from mylogging import LOG
 from grpc.beta import implementations
 import conf.protos.authentication_service_pb2 as authentication_service_pb2
-import random, string
+import random
+import string
 from app_globals import *
 from notification.notification import NotificationClient
 
@@ -68,26 +69,28 @@ class Device(object):
     def mqttPort(self):
         return self._mqtt_port
 
-
     def establish_connection(self):
-        LOG.info("Connected to JSD:ip=%s, port=%s, client-id = %s" %(self._host, self._rpc_port, self._client_id))
+        LOG.info("Connected to JSD:ip=%s, port=%s, client-id = %s" %
+                 (self._host, self._rpc_port, self._client_id))
         channel = implementations.insecure_channel(self._host, self._rpc_port)
         stub = authentication_service_pb2.beta_create_Login_stub(channel)
-        request = authentication_service_pb2.LoginRequest(user_name=self._auth_user, password= self._auth_pwd,
+        request = authentication_service_pb2.LoginRequest(user_name=self._auth_user, password=self._auth_pwd,
                                                           client_id=self._client_id)
         login_response = stub.LoginCheck(request, RPC_TIMEOUT_SECONDS)
-        LOG.info("Received response from the LoginCheck: %s" %login_response.result)
+        LOG.info("Received response from the LoginCheck: %s" %
+                 login_response.result)
         return channel
 
-    def __init__(self, host= DEFAULT_RPC_HOST, user=DEFAULT_USER_NAME, pwd=DEFAULT_PASSWORD,
-                 rpc_port=DEFAULT_RPC_PORT, notification_port = DEFAULT_NOTIFICATION_PORT, **kvargs):
+    def __init__(self, host=DEFAULT_RPC_HOST, user=DEFAULT_USER_NAME, pwd=DEFAULT_PASSWORD,
+                 rpc_port=DEFAULT_RPC_PORT, notification_port=DEFAULT_NOTIFICATION_PORT, **kvargs):
         self._host = host
         self._mqtt_port = notification_port
         self._auth_user = user
         self._auth_pwd = pwd
         self._rpc_port = rpc_port
         # Creating a random client id everytime to avoid disconnect from JSD
-        self._client_id =  ''.join(random.choice(string.lowercase) for i in range(10))
+        self._client_id = ''.join(random.choice(
+            string.lowercase) for i in range(10))
         self._rpc_channel = self.establish_connection()
         # Initialize the instance variables
         self.connected = False
@@ -115,11 +118,13 @@ class Device(object):
                 result = sanityObj.CommitNotificationConfig()
                 if (False == result):
                     # Failed to apply the notification config on the vmx
-                    LOG.critical("Failed to apply commit notification config on the VMX")
+                    LOG.critical(
+                        "Failed to apply commit notification config on the VMX")
                     # log the message
                     sys.exit(0)
                 else:
-                    LOG.info("Applied the commit notification config successfully")
+                    LOG.info(
+                        "Applied the commit notification config successfully")
             else:
                 # log that Notification config is present
                 LOG.info("Commit Notification config already present")
@@ -136,7 +141,7 @@ class Device(object):
             self.connected = True
             LOG.info('Device is initialized now')
         except Exception as e:
-            print("Exception received: %s" %e.message)
+            print("Exception received: %s" % e.message)
             sys.exit(0)
 
     def getChannel(self):

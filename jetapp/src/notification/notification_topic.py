@@ -22,9 +22,11 @@ from common.mylogging import LOG
 
 DEFAULT_VALUE = "+"                           # Implies any value
 DEFAULT_TOPIC = "#"                           # Implies all value
-DEFAULT_IFD = r"+/+/+"                        # Regular expression for a default IFD
-GENPUB_TOPIC_HEADER = r"/junos/events/genpub" # Generic pub event topic header
+# Regular expression for a default IFD
+DEFAULT_IFD = r"+/+/+"
+GENPUB_TOPIC_HEADER = r"/junos/events/genpub"  # Generic pub event topic header
 CONFIG_UPDATE = r"config-update"
+
 
 class CreateTopic(object):
 
@@ -32,6 +34,7 @@ class CreateTopic(object):
     Wrapper class for creating Notification Topic.
 
     """
+
     def create_config_update_topic(self):
         """
         This method creates a topic to subscribe config-update events.
@@ -45,4 +48,3 @@ class CreateTopic(object):
         self.topics_subscribed.append(data['topic'])
         LOG.info('Successfully appended the topic %s' % data['topic'])
         return type('Topic', (), data)
-

@@ -5,11 +5,12 @@ from notification_handler import *
 from common.app_globals import *
 from common.mylogging import LOG
 
+
 class NotificationClient:
 
     def __init__(self, device=DEFAULT_USER_NAME, port=DEFAULT_NOTIFICATION_PORT,
-                user=None, password=None, tls=None, keepalive=DEFAULT_MQTT_TIMEOUT,
-                bind_address="", is_stream=False):
+                 user=None, password=None, tls=None, keepalive=DEFAULT_MQTT_TIMEOUT,
+                 bind_address="", is_stream=False):
         """
         Create a request response session with the  JET server. Raises exception in case
         of invalid arguments or when JET notification server is not accessible.
@@ -27,7 +28,8 @@ class NotificationClient:
         try:
             self.notifier = NotifierMqtt()
             LOG.info('Connecting to JET notification server')
-            self.notifier.mqtt_client.connect(device, port, keepalive, bind_address)
+            self.notifier.mqtt_client.connect(
+                device, port, keepalive, bind_address)
             self.notifier.mqtt_client.loop_start()
             self.notifier.handlers = collections.defaultdict(set)
             if is_stream == True:

@@ -35,7 +35,8 @@ from common.app_globals import *
 
 
 def Main():
-    parser = argparse.ArgumentParser(prog=os.path.basename(__file__), description='Snabb VMX integration JET app')
+    parser = argparse.ArgumentParser(prog=os.path.basename(
+        __file__), description='Snabb VMX integration JET app')
     parser.add_argument("--host", required=True, help="Host address of the JSD server",
                         type=str, default=DEFAULT_RPC_HOST)
     parser.add_argument("--user", required=True, help="Username for authentication by JET server (default:%(default)s)",
@@ -47,7 +48,8 @@ def Main():
     parser.add_argument("--notification_port", nargs='?', help="Port number of the JSD notification server. default: %(default)s",
                         type=int, default=DEFAULT_NOTIFICATION_PORT)
     args = parser.parse_args()
-    device = Device(args.host,args.user,args.password,args.rpc_port,args.notification_port)
+    device = Device(args.host, args.user, args.password,
+                    args.rpc_port, args.notification_port)
 
     dispatchFunction = ParseNotification(device)
     dispatchThread = Thread(target=dispatchFunction)
@@ -64,7 +66,7 @@ def Main():
 
     except Exception as e:
         # log device initialization failed
-        LOG.critical("JET app exiting due to exception: %s" %str(e.message))
+        LOG.critical("JET app exiting due to exception: %s" % str(e.message))
         sys.exit(0)
     return
 
