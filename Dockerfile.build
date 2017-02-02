@@ -10,7 +10,7 @@ RUN apt-get install -y --no-install-recommends ca-certificates \
    libaio-dev libcap-dev libattr1-dev libpixman-1-dev libncurses5 \
    libncurses5-dev libspice-server1 libtool musl-tools python-pip python-dev
 
-RUN mkdir /build && pip install --root /build thrift paho-mqtt Jinja2
+RUN mkdir /build && pip install --root /build grpcio paho-mqtt Jinja2
 
 COPY build.sh /
 

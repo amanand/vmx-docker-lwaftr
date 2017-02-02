@@ -5,7 +5,7 @@ set +e
 echo ""
 echo "-------------------------"
 echo "building jet-python ..."
-cd /u/jet-python && python setup.py install --root=/build --single-version-externally-managed
+cd /u/jetapp && pip install -r requirements.txt --root=/build --single-version-externally-managed
 
 echo ""
 echo "-------------------------"
