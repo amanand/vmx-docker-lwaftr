@@ -5,7 +5,8 @@ from mylogging import LOG
 import conf.protos.mgd_service_pb2 as mgd_service_pb2
 import conf.protos.openconfig_service_pb2 as openconfig_service_pb2
 import common.app_globals
-
+import json
+from conf.conf_globals import *
 
 class Sanity(object):
     """
@@ -86,3 +87,17 @@ class Sanity(object):
         except Exception as e:
             LOG.error("Failed to set the notification config, execption: %s" % e.message)
             return False
+
+    def StartSnabbifConfigPresent(self):
+        LOG.info("Checking if Snabb configuration is present in JUNOS")
+        stub = openconfig_service_pb2.beta_create_OpenconfigRpcApi_stub(self._dev.getChannel())
+        get_request = openconfig_service_pb2.GetRequestList(operation_id="1001", operation=1,
+                                                            path="/configuration/ietf-softwire:softwire-config")
+        request = openconfig_service_pb2.GetRequest(request_id=1002, encoding=1, get_request=[get_request])
+        response = stub.Get(request, common.app_globals.RPC_TIMEOUT_SECONDS)
+        for rsp in response.response:
+            if rsp.response_code == openconfig_service_pb2.OK and rsp.value != "":
+                LOG.info("Invoked the getRequest for snabb configuration")
+                config_dict = json.loads(rsp.value)["ietf-softwire:softwire-config"]
+                LOG.debug("Snabb config is present in the VMX %s" % (str(config_dict)))
+                dispQ.put(config_dict)

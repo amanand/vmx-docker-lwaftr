@@ -3,6 +3,7 @@ __copyright__ = "Copyright (c) 2017 Juniper Networks, Inc."
 
 import sys
 import os
+#from jnpr.jet.JetHandler import *
 from sanity import Sanity
 from conf.callback import SnabbCallback
 from mylogging import LOG
@@ -98,6 +99,8 @@ class Device(object):
         # Create a request response session
         try:
             sanityObj = Sanity(self)
+            # Check for the snabb config on JUNOS first
+            sanityObj.StartSnabbifConfigPresent()
             sanityResult = sanityObj.YangModulePresent()
             if False == sanityResult:
                 # log the message

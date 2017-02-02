@@ -3,11 +3,11 @@ import os
 from jinja2 import Environment, FileSystemLoader
 from common.mylogging import LOG
 from conf_action import ConfAction
-from  conf.conf_globals import dispQ
+from conf_globals import *
 import filecmp
-#from jnpr.junos import Device
-#from jnpr.junos.utils.scp import SCP
+from collections import OrderedDict
 from ftplib import FTP
+import re
 
 
 class ParseNotification:
@@ -22,10 +22,11 @@ class ParseNotification:
 
     def get_binding_file(self, remote_filename, local_filename):
         try:
-            # Create a Pyez connection with the device
+            localfd = open(local_filename,'w+')
             ftp = FTP(self._dev._host)
             ftp.login(user=self._dev._auth_user, passwd=self._dev._auth_pwd)
-            ftp.retrbinary('RETR %s' % remote_filename, local_filename.write)
+            LOG.info("FTP get the file %s" %remote_filename)
+            ftp.retrbinary('RETR %s' % remote_filename, localfd.write)
         except Exception as e:
             LOG.critical('Failed to connect to the device: exception: %s' %e.message)
             return False
@@ -54,7 +55,7 @@ class ParseNotification:
         PATH = os.path.dirname(os.path.abspath(__file__))
         TEMPLATE_ENVIRONMENT = Environment(
             autoescape=True,
-            loader=FileSystemLoader(os.path.join(PATH, 'templates')),
+            loader=FileSystemLoader(os.path.join(PATH, 'template')),
             trim_blocks=True,
             lstrip_blocks = False)
         try:
@@ -75,6 +76,130 @@ class ParseNotification:
         SNABB_CFG_FILE =  SNABB_FILENAME + str(instance_id) + '.cfg'
         return self.write_file(SNABB_CFG_FILE, SNABB_CFG_TEMPLATE, cfg_dict)
 
+    def parse_for_binding(self,config_dict,action_handler):
+        br_addresses = OrderedDict()
+        br_address_idx = -1
+        softwires = []
+        addresses = {}
+        remote_binding_table_filename = config_dict['binding']['br'].get('jnx-aug-softwire:binding-table-file', "None")
+        # This section will take care of the binding files and binding table entries
+        # Fetch this binding file from the device
+        if remote_binding_table_filename is not "None":
+            # New binding table is provided by the user
+            new_binding_file = r'/tmp/snabbvmx.binding.new'
+            # touch the new file
+            open(new_binding_file, 'w+').close()
+            if self.get_binding_file(remote_binding_table_filename, new_binding_file):
+                # Determine if this binding file is different from existing file
+                if self.old_binding_filename is None:
+                    self.old_binding_filename = JUNOS_BINDING_FILENAME
+                    os.rename(new_binding_file, self.old_binding_filename)
+                    self.binding_changed = True
+                    LOG.info("Binding Table has changed")
+                elif not filecmp.cmp(self.old_binding_filename, new_binding_file):
+                    os.rename(new_binding_file, self.old_binding_filename)
+                    # os.remove(new_binding_file)
+                    self.old_binding_filename = remote_binding_table_filename
+                    self.binding_changed = True
+                    LOG.info("Binding Table has changed")
+                else:
+                    LOG.info("Binding Table has not changed")
+
+                if (self.binding_changed):
+                    self.binding_changed = False
+                    with open(self.old_binding_filename, 'r') as f:
+                        # Walk over the file to create the binding entries
+                        regex_br_address = r"softwires_([\w:]+)"
+                        regex_br_entries = r"([\w:]+)+\s+(\d+.\d+.\d+.\d+),(\d+),(\d+),(\d+)"
+                        for lines in f.readlines():
+                            if re.search(regex_br_address, lines):
+                                match = re.search(regex_br_address, lines)
+                                br_addresses[match.group(0).split('_')[1]] = br_address_idx + 1
+                                br_address_idx += 1
+                            elif re.search(regex_br_entries, lines):
+                                match = re.search(regex_br_entries, lines)
+                                # print match.groups()
+                                shift = 16 - int(match.group(4)) - int(match.group(5))
+                                softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' % (match.group(2),
+                                                                                           match.group(3),
+                                                                                           match.group(1),
+                                                                                           br_address_idx))
+                                if shift > 0:
+                                    addresses[str(match.group(2))] = "{psid_length=%s, shift=%d}" % (match.group(4),
+                                                                                                     shift)
+                                else:
+                                    addresses[str(match.group(2))] = "{psid_length=%s}" % match.group(4)
+
+                            else:
+                                LOG.info("Ignoring this line >>>> %s" %lines)
+            else:
+                LOG.critical('Failed to copy remote binding file onto the local disk')
+                self.old_binding_filename = None
+        else:
+            LOG.info("No binding table info found in the config")
+            self.old_binding_filename = None
+
+        # Now parse the snabb config to see if there is any binding table entry
+        new_instance_list = config_dict['binding']['br']['br-instances']['br-instance']
+        for instances in new_instance_list:
+            bt = instances.get('binding-table',None)
+            if bt is not None:
+                bte = bt.get('binding-entry',None)
+                if bte is not None:
+                    for items in bte:
+                        binding_ipv6_info = items.get("binding-ipv6info", None)
+                        aftr = br_address_idx
+                        if binding_ipv6_info is not None:
+                            if binding_ipv6_info in br_addresses.keys():
+                                aftr = br_addresses[binding_ipv6_info]
+                            else:
+                                # Assign a new index and add this key to br_addresses
+                                aftr = len(br_addresses)
+                                br_addresses[binding_ipv6_info] = aftr
+                            ipv4 = items.get("binding-ipv4-addr", None)
+                            b4_address = items.get("br-ipv6-addr",None)
+                            portset = items.get('port-set',None)
+                            if portset is not None:
+                                psid = portset.get("psid",None)
+                                psid_len = portset.get("psid-len",0)
+                                shift = 16 - psid_len - portset.get("psid-offset",0)
+                                if shift > 0:
+                                    addresses[ipv4] = "{psid_length=%s, shift=%d}" % (psid_len,shift)
+                                else:
+                                    addresses[ipv4] = "{psid_length=%s}" % psid_len
+                                softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' %(ipv4,psid,b4_address,aftr))
+                            else:
+                                LOG.info("portset not present in the config")
+                        else:
+                            LOG.info("binding-ipv6-info is not present in the config")
+
+                else:
+                    LOG.info("Empty binding table entry in the configuration")
+            else:
+                LOG.info("No binding table configuration present")
+
+        # Write it into a file
+        with open(SNABB_BINDING_FILENAME, 'w+') as nf:
+            nf.write('psid_map {\n')
+            for items in sorted(addresses.iterkeys()):
+                nf.write("\t" + items + " " + addresses[items] + '\n')
+            nf.write("}\nbr_addresses {\n")
+            for items in br_addresses.keys():
+                nf.write("\t" + items + ",\n")
+            nf.write("}\nsoftwires {\n")
+            for items in softwires:
+                nf.write("\t" + items + "\n")
+            nf.write("}")
+
+        # Send a sighup to all the snabb instances
+        LOG.info('Binding entries have changed')
+        rc = action_handler.bindAction(self.old_binding_filename)
+        if not rc:
+           LOG.critical("Failed to send SIGHUP to the Snabb instances")
+        else:
+           LOG.info("Successfully sent SIGHUP to the Snabb instances")
+        return
+
     def parse_snabb_config(self, config_dict):
         if config_dict.get('purge', None) is not None:
             # Call the confAction to kill all the Snabb applications after deleting the cfg/conf/binding files
@@ -93,51 +218,13 @@ class ParseNotification:
         # Action handler to commit actions for conf/cfg/binding changes
         action_handler = ConfAction()
 
+        # First the binding entry changes
+        self.parse_for_binding(config_dict,action_handler)
+
         # description is same for all the instances in the YANG schema
         cfg_dict = {}
         conf_dict = {}
-        print config_dict
         descr = config_dict.get('description', "None")
-        print config_dict
-        remote_binding_table_filename = config_dict['binding']['br'].get('jnx-aug-softwire:binding-table-file',"None")
-
-        # Fetch this binding file from the device
-        if remote_binding_table_filename is not "None":
-            # New binding table is provided by the user
-            new_binding_file = r'/tmp/snabbvmx.binding.new'
-            # touch the new file
-            open(new_binding_file, 'w+').close()
-            if (self.get_binding_file(remote_binding_table_filename, new_binding_file)):
-                # Determine if this binding file is different from existing file
-                if self.old_binding_filename is None:
-                    self.old_binding_filename = r'/tmp/snabbvmx-xe.binding'
-                    os.rename(new_binding_file, self.old_binding_filename)
-                    self.binding_changed = True
-                    LOG.info("Binding Table has changed")
-                elif not filecmp.cmp(self.old_binding_filename, new_binding_file):
-                    os.rename(new_binding_file,self.old_binding_filename)
-                    #os.remove(new_binding_file)
-                    self.old_binding_filename = remote_binding_table_filename
-                    self.binding_changed = True
-                    LOG.info("Binding Table has changed")
-                else:
-                    LOG.info("Binding Table has not changed")
-
-                if (self.binding_changed):
-                    self.binding_changed = False
-                    # Send a sighup to all the snabb instances
-                    rc = action_handler.bindAction(self.old_binding_filename)
-                    if not rc:
-                       LOG.critical("Failed to send SIGHUP to the Snabb instances")
-                    else:
-                       LOG.info("Successfully sent SIGHUP to the Snabb instances")
-            else:
-                LOG.critical('Failed to copy remote binding file onto the local disk')
-                self.old_binding_filename = None
-        else:
-            LOG.info("No binding table info found in the config")
-            self.old_binding_filename = None
-
         # Parse the config and cfg changes
         new_instance_list = config_dict['binding']['br']['br-instances']['br-instance']
         for instances in new_instance_list:
@@ -169,18 +256,18 @@ class ParseNotification:
             conf_dict['ipv6_mtu'] = instances.get('mtu', "None")
 
 
-            conf_dict['policy_icmpv4_incoming'] = instances['policy_icmpv4_incoming']
-            conf_dict['policy_icmpv4_outgoing'] = instances['policy_icmpv4_outgoing']
+            conf_dict['policy_icmpv4_incoming'] = instances.get('policy_icmpv4_incoming', 'None')
+            conf_dict['policy_icmpv4_outgoing'] = instances.get('policy_icmpv4_outgoing','None')
 
             #TODO: Following two missing in augmented file
-            conf_dict['icmpv4_rate_limiter_n_packets'] = instances['icmpv4_rate_limiter_n_packets']
-            conf_dict['icmpv4_rate_limiter_n_seconds'] = instances['icmpv4_rate_limiter_n_seconds']
+            conf_dict['icmpv4_rate_limiter_n_packets'] = instances.get('icmpv4_rate_limiter_n_packets','None')
+            conf_dict['icmpv4_rate_limiter_n_seconds'] = instances.get('icmpv4_rate_limiter_n_seconds','None')
 
 
-            conf_dict['policy_icmpv6_incoming'] = instances['policy_icmpv6_incoming']
-            conf_dict['policy_icmpv6_outgoing'] = instances['policy_icmpv6_outgoing']
-            conf_dict['icmpv6_rate_limiter_n_packets'] = instances['icmpv6_rate_limiter_n_packets']
-            conf_dict['icmpv6_rate_limiter_n_seconds'] = instances['icmpv6_rate_limiter_n_seconds']
+            conf_dict['policy_icmpv6_incoming'] = instances.get('policy_icmpv6_incoming','None')
+            conf_dict['policy_icmpv6_outgoing'] = instances.get('policy_icmpv6_outgoing','None')
+            conf_dict['icmpv6_rate_limiter_n_packets'] = instances.get('icmpv6_rate_limiter_n_packets','None')
+            conf_dict['icmpv6_rate_limiter_n_seconds'] = instances.get('icmpv6_rate_limiter_n_seconds','None')
             mac_path = SNABB_MAC_PATH+str(instance_id)
             # Read the files
             mac_id = ''
@@ -231,7 +318,7 @@ class ParseNotification:
                 cnt = 0
                 conf_changed = False
                 for conf_instance in self.old_conf:
-                    if self.old_conf['binding_table'] == conf_dict['binding_table']:
+                    if self.old_conf['binding_table'] == conf_dict.get('binding_table','None'):
                         if (self.dictdiff(conf_instance, conf_dict)):
                             conf_changed = True
                             self.old_conf[cnt] = conf_dict
@@ -245,7 +332,6 @@ class ParseNotification:
                     if not ret_conf:
                         LOG.critical("Failed to write the conf file")
                         return
-
 
             if ret_conf or ret_cfg:
                 # Assume that the instances list is populated here
