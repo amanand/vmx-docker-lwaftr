@@ -29,8 +29,8 @@ RUN tar zxf python-tools.tgz && rm python-tools.tgz
 # Snabb
 COPY snabb/src/snabb /usr/local/bin/
 
-RUN mkdir /yang /jetapp /jetapp/op /utils /op /snmp /jet \
-  /jetapp/common /jetapp/conf /jetapp/notification /jetapp/conf/template /jetapp/conf/protos 
+RUN mkdir /yang /jetapp /jetapp/src /utils /op /snmp /jet \
+  /jetapp/src/common /jetapp/src/conf /jetapp/src/notification /jetapp/src/conf/template /jetapp/src/conf/protos 
 
 COPY yang/ietf-inet-types.yang yang/ietf-yang-types.yang \
   yang/ietf-softwire.yang \
@@ -39,29 +39,57 @@ COPY yang/ietf-inet-types.yang yang/ietf-yang-types.yang \
   jetapp/yang/op/rpc-monitor-lwaftr.yang \
   yang/jnx-aug-softwire.yang yang/jnx-softwire-dev.yang yang/
 
+COPY /jetapp/COPYRIGHT /jetapp/COPYRIGHT
+COPY /jetapp/LICENSE /jetapp/LICENSE
+COPY /jetapp/MANIFEST.in /jetapp/MANIFEST.in
+COPY /jetapp/README.txt /jetapp/README.txt
+COPY /jetapp/requirements.txt /jetapp/requirements.txt
+COPY /jetapp/setup.py /jetapp/setup.py
+COPY /jetapp/src/__init__.py /jetapp/src/__init__.py
+COPY /jetapp/src/main.py /jetapp/src/main.py
+COPY /jetapp/src/requirements.txt /jetapp/src/requirements.txt
+COPY /jetapp/src/version.py /jetapp/src/version.py
+COPY /jetapp/src/common/__init__.py /jetapp/src/common/__init__.py
+COPY /jetapp/src/common/app_globals.py /jetapp/src/common/app_globals.py
+COPY /jetapp/src/common/device.py /jetapp/src/common/device.py
+COPY /jetapp/src/common/mylogging.py /jetapp/src/common/mylogging.py
+COPY /jetapp/src/common/sanity.py /jetapp/src/common/sanity.py
+COPY /jetapp/src/common/snabb_startup_checks.py /jetapp/src/common/snabb_startup_checks.py
+COPY /jetapp/src/conf/__init__.py /jetapp/src/conf/__init__.py
+COPY /jetapp/src/conf/callback.py /jetapp/src/conf/callback.py
+COPY /jetapp/src/conf/conf_action.py /jetapp/src/conf/conf_action.py
+COPY /jetapp/src/conf/conf_globals.py /jetapp/src/conf/conf_globals.py
+COPY /jetapp/src/conf/conf_parser.py /jetapp/src/conf/conf_parser.py
+COPY /jetapp/src/conf/protos/__init__.py /jetapp/src/conf/protos/__init__.py
+COPY /jetapp/src/conf/protos/authentication_service.proto /jetapp/src/conf/protos/authentication_service.proto
+COPY /jetapp/src/conf/protos/authentication_service_pb2.py /jetapp/src/conf/protos/authentication_service_pb2.py
+COPY /jetapp/src/conf/protos/mgd_service.proto /jetapp/src/conf/protos/mgd_service.proto
+COPY /jetapp/src/conf/protos/mgd_service_pb2.py /jetapp/src/conf/protos/mgd_service_pb2.py
+COPY /jetapp/src/conf/protos/openconfig_service.proto /jetapp/src/conf/protos/openconfig_service.proto
+COPY /jetapp/src/conf/protos/openconfig_service_pb2.py /jetapp/src/conf/protos/openconfig_service_pb2.py
+COPY /jetapp/src/conf/template/snabbvmx-binding.template /jetapp/src/conf/template/snabbvmx-binding.template
+COPY /jetapp/src/conf/template/snabbvmx-cfg.template /jetapp/src/conf/template/snabbvmx-cfg.template
+COPY /jetapp/src/conf/template/snabbvmx-conf.template /jetapp/src/conf/template/snabbvmx-conf.template
+COPY /jetapp/src/conf/template/snabbvmx-top.template /jetapp/src/conf/template/snabbvmx-top.template
+COPY /jetapp/src/notification/__init__.py /jetapp/src/notification/__init__.py
+COPY /jetapp/src/notification/notification.py /jetapp/src/notification/notification.py
+COPY /jetapp/src/notification/notification_handler.py /jetapp/src/notification/notification_handler.py
+COPY /jetapp/src/notification/notification_topic.py /jetapp/src/notification/notification_topic.py
+COPY /jetapp/src/op/__init__.py /jetapp/src/op/__init__.py
+COPY /jetapp/src/op/opglobals.py /jetapp/src/op/opglobals.py
+COPY /jetapp/src/op/opserver.py /jetapp/src/op/opserver.py
+COPY /jetapp/tests/test_rpc_get_lwaftr_state.py /jetapp/tests/test_rpc_get_lwaftr_state.py
+COPY /jetapp/tests/test_rpc_get_lwaftr_statistics.py /jetapp/tests/test_rpc_get_lwaftr_statistics.py
+COPY /jetapp/yang/op/junos-extension-odl.yang /jetapp/yang/op/junos-extension-odl.yang
+COPY /jetapp/yang/op/junos-extension.yang /jetapp/yang/op/junos-extension.yang
+COPY /jetapp/yang/op/rpc-get-lwaftr-statistics.yang /jetapp/yang/op/rpc-get-lwaftr-statistics.yang
+COPY /jetapp/yang/op/rpc-get-lwaftr.yang /jetapp/yang/op/rpc-get-lwaftr.yang
+COPY /jetapp/yang/op/rpc-jet.py /jetapp/yang/op/rpc-jet.py
+COPY /jetapp/yang/op/rpc-monitor-lwaftr.yang /jetapp/yang/op/rpc-monitor-lwaftr.yang
+COPY /jetapp/yang/op/rpc_get_lwaftr_state.py /jetapp/yang/op/rpc_get_lwaftr_state.py
+COPY /jetapp/yang/op/rpc_get_lwaftr_statistics.py /jetapp/yang/op/rpc_get_lwaftr_statistics.py
+COPY /jetapp/yang/op/rpc_monitor_lwaftr.py /jetapp/yang/op/rpc_monitor_lwaftr.py
 
-COPY   /jetapp/src/main.py /jetapp/src/requirements.txt   \
-   /jetapp/src/version.py /jetapp/common/__init__.py   \
-   /jetapp/common/app_globals.py /jetapp/common/device.py   \
-   /jetapp/common/mylogging.py /jetapp/common/sanity.py   \
-   /jetapp/common/snabb_startup_checks.py /jetapp/conf/__init__.py   \
-   /jetapp/conf/callback.py /jetapp/conf/conf_action.py   \
-   /jetapp/conf/conf_globals.py /jetapp/conf/conf_parser.py   \
-   /jetapp/protos/__init__.py /jetapp/protos/authentication_service.proto   \
-   /jetapp/protos/authentication_service_pb2.py /jetapp/protos/mgd_service.proto   \
-   /jetapp/protos/mgd_service_pb2.py /jetapp/protos/openconfig_service.proto   \
-   /jetapp/protos/openconfig_service_pb2.py /jetapp/template/snabbvmx-binding.template   \
-   /jetapp/template/snabbvmx-cfg.template /jetapp/template/snabbvmx-conf.template   \
-   /jetapp/template/snabbvmx-top.template /jetapp/notification/__init__.py   \
-   /jetapp/notification/notification.py /jetapp/notification/notification_handler.py   \
-   /jetapp/notification/notification_topic.py /jetapp/op/__init__.py   \
-   /jetapp/op/opglobals.py /jetapp/op/opserver.py   \
-   /jetapp/tests/test_rpc_get_lwaftr_state.py /jetapp/tests/test_rpc_get_lwaftr_statistics.py   \
-   /jetapp/op/junos-extension-odl.yang /jetapp/op/junos-extension.yang   \
-   /jetapp/op/rpc-get-lwaftr-statistics.yang /jetapp/op/rpc-get-lwaftr.yang   \
-   /jetapp/op/rpc-jet.py /jetapp/op/rpc-monitor-lwaftr.yang   \
-   /jetapp/op/rpc_get_lwaftr_state.py /jetapp/op/rpc_get_lwaftr_statistics.py   \
-   /jetapp/op/rpc_monitor_lwaftr.py   /jetapp/
 
 COPY slax/lwaftr.slax \
   jetapp/yang/op/rpc_get_lwaftr_state.py \
