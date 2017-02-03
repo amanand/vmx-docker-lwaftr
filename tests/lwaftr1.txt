@@ -51,7 +51,15 @@ system {
     }
     services {
         ssh;
+	ftp;
         extension-service {
+	    request-response {
+		grpc {
+		    clear-text {
+			port 50051;
+		    }
+		}
+	    }
             notification {
                 port 1883;
                 allow-clients {
