@@ -160,37 +160,29 @@ class ParseNotification:
                 if bte is not None:
                     for items in bte:
                         binding_ipv6_info = items.get("binding-ipv6info", None)
-                        aftr = br_address_idx
-                        if binding_ipv6_info is not None:
-                            if binding_ipv6_info in br_addresses.keys():
-                                aftr = br_addresses[binding_ipv6_info]
+                        ipv4 = items.get("binding-ipv4-addr", None)
+                        b4_address = items.get("br-ipv6-addr", None)
+                        portset = items.get('port-set', None)
+                        psid = portset.get("psid", None)
+                        psid_len = portset.get("psid-len", 0)
+                        offset = portset.get("psid-offset", 0)
+                        shift = 16-psid_len-offset
+                        if binding_ipv6_info is not None and ipv4 is not None and b4_address is not None:
+                            if shift > 0:
+                                addresses[ipv4] = "{psid_length=%s, shift=%d}" % (psid_len, shift)
                             else:
-                                # Assign a new index and add this key to
-                                # br_addresses
+                                addresses[ipv4] = "{psid_length=%s}" %psid_len
+                            if b4_address in br_addresses.keys():
+                                aftr = br_addresses[b4_address]
+                            else:
                                 aftr = len(br_addresses)
-                                br_addresses[binding_ipv6_info] = aftr
-                            ipv4 = items.get("binding-ipv4-addr", None)
-                            b4_address = items.get("br-ipv6-addr", None)
-                            portset = items.get('port-set', None)
-                            if portset is not None:
-                                psid = portset.get("psid", None)
-                                psid_len = portset.get("psid-len", 0)
-                                shift = 16 - psid_len - \
-                                    portset.get("psid-offset", 0)
-                                if shift > 0:
-                                    addresses[ipv4] = "{psid_length=%s, shift=%d}" % (
-                                        psid_len, shift)
-                                else:
-                                    addresses[
-                                        ipv4] = "{psid_length=%s}" % psid_len
-                                softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' % (
-                                    ipv4, psid, b4_address, aftr))
-                            else:
-                                LOG.info("portset not present in the config")
-                        else:
-                            LOG.info(
-                                "binding-ipv6-info is not present in the config")
+                                br_addresses[b4_address] = aftr
 
+                            softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' % (
+                                ipv4,psid,binding_ipv6_info,aftr))
+
+                        else:
+                            LOG.info("Incomplete binding table entry in the configuration %s" %str(items))
                 else:
                     LOG.info("Empty binding table entry in the configuration")
             else:
