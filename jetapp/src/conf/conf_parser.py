@@ -257,7 +257,7 @@ class ParseNotification:
             # Verify that the old config contains this instance, if not then we
             # need to delete this instance
             self.instances[instance_id] = 1
-            cfg_dict['cnf_file_name'] = SNABB_FILENAME + str(instance_id) + '.conf'
+            cfg_dict['cnf_file_name'] = SNABB_FILENAME.split('/')[-1] + str(instance_id) + '.conf'
 
             cfg_dict['ipv4_address'] = self.myget(instances,'ipv4_address')
             cfg_dict['ipv4_desc'] = descr
