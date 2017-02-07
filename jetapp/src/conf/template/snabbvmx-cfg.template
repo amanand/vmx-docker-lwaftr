@@ -2,29 +2,59 @@ return {
   lwaftr = "{{context.cnf_file_name if context.cnf_file_name}}",
   settings = {
  {% if context.ring_buffer_size != None %}
-    ring_buffer_size = "{{context.ring_buffer_size}}"
+   ring_buffer_size = {{context.ring_buffer_size}},
  {% endif %}
  {% if context.ingress_drop_monitor != None %}
-    ingress_drop_monitor = "{{context.ingress_drop_monitor }}"
+    ingress_drop_monitor = {{context.ingress_drop_monitor}},
  {% endif %}
-    ingress_drop_threshold = "{{context.ingress_drop_threshold if context.ingress_drop_threshold != 'None'}}"
-    ingress_drop_interval = "{{context.ingress_drop_interval if context.ingress_drop_interval != 'None' }}"
-    ingress_drop_wait = "{{context.ingress_drop_wait if context.ingress_drop_wait != "None"}}"
+ {% if context.ingress_drop_threshold != None %}
+    ingress_drop_threshold  = {{context.ingress_drop_threshold}},
+ {% endif %}
+ {% if context.ingress_drop_interval != None %}
+    ingress_drop_interval  = {{context.ingress_drop_interval}},
+ {% endif %}
+ {% if context.ingress_drop_wait != None %}
+    ingress_drop_wait  = {{context.ingress_drop_wait }},
+ {% endif %}
   },
   ipv6_interface = {
-    ipv6_address = "{{context.ipv6_address |default('NONE')}}",
-    description = "{{context.ipv6_desc |default('NONE')}}",
-    cache_refresh_interval = {{context.ipv6_cache_rate |default('NONE')}},
-    ipv6_ingress_filter = {{context.ipv6_ingress_filter |default('NONE')}},
-    ipv6_egress_filter = {{context.ipv6_egress_filter |default('NONE')}},
-    fragmentation = {{context.fragmentation | default('NONE')}},
+{% if context.ipv6_address != None %}
+    ipv6_address  = {{context.ipv6_address}},
+{% endif %}
+{% if context.description != None %}
+    description  = {{context.ipv6_desc}},
+{% endif %}
+{% if context.cache_refresh_interval != None %}
+    cache_refresh_interval  = {{context.ipv6_cache_rate}},
+{% endif %}
+{% if context.ipv6_ingress_filter != None %}
+    ipv6_ingress_filter  = {{context.ipv6_ingress_filter}},
+{% endif %}
+{% if context.ipv6_egress_filter != None %}
+    ipv6_egress_filter  = {{context.ipv6_egress_filter}},
+{% endif %}
+{% if context.fragmentation != None %}
+    fragmentation  = {{context.fragmentation}},
+{% endif %}
   },
   ipv4_interface = {
-    ipv4_address = "{{context.ipv4_address |default('NONE')}}",
-    description = "{{context.ipv4_desc |default('NONE')}}",
-    cache_refresh_interval = {{context.ipv4_cache_rate |default('NONE')}},
-    ipv4_ingress_filter = {{context.ipv4_ingress_filter |default('NONE')}},
-    ipv4_egress_filter = {{context.ipv4_egress_filter |default('NONE')}},
-    fragmentation = {{context.fragmentation | default('NONE')}},
+{% if context.ipv4_address != None %}
+    ipv4_address  = {{context.ipv4_address}},
+{% endif %}
+{% if context.description != None %}
+    description  = {{context.ipv4_desc}},
+{% endif %}
+{% if context.cache_refresh_interval != None %}
+    cache_refresh_interval  = {{context.ipv4_cache_rate}},
+{% endif %}
+{% if context.ipv4_ingress_filter != None %}
+    ipv4_ingress_filter  = {{context.ipv4_ingress_filter}},
+{% endif %}
+{% if context.ipv4_egress_filter != None %}
+    ipv4_egress_filter  = {{context.ipv4_egress_filter}},
+{% endif %}
+{% if context.fragmentation != None %}
+    fragmentation  = {{context.fragmentation}},
+{% endif %}
   },
 }

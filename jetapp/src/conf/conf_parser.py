@@ -278,6 +278,7 @@ class ParseNotification:
             cfg_dict['ingress_drop_monitor'] = self.myget(instances,'ingress_drop_monitor')
             cfg_dict['ingress_drop_threshold'] = self.myget(instances, 'ingress_drop_threshold')
             cfg_dict['ingress_drop_wait'] = self.myget(instances,'ingress_drop_wait')
+            cfg_dict['ring_buffer_size'] = None
 
             # Parse the conf file attributes
             if self.old_binding_filename is not None:
@@ -324,34 +325,6 @@ class ParseNotification:
             conf_dict['ipv6_address'] = '2001:db8::1'
             conf_dict['inet_mac'] = '02:02:02:02:02:02'
             conf_dict['next_hop6_mac'] = '02:02:02:02:02:02'
-            conf_dict['ring_buffer_size'] = None
-
-            # # TODO: Do we still have the ipv4 and ipv6 parameters below??
-            # conf_dict['aftr_ipv4_ip'] = instances.get('address', "None")
-            # conf_dict['ipv4_mtu'] = instances.get('mtu', "None")
-            # conf_dict['aftr_ipv6_ip'] = instances.get('address', "None")
-            # conf_dict['ipv6_mtu'] = instances.get('mtu', "None")
-            #
-            # conf_dict['policy_icmpv4_incoming'] = instances.get(
-            #     'policy_icmpv4_incoming', 'None')
-            # conf_dict['policy_icmpv4_outgoing'] = instances.get(
-            #     'policy_icmpv4_outgoing', 'None')
-            #
-            # # TODO: Following two missing in augmented file
-            # conf_dict['icmpv4_rate_limiter_n_packets'] = instances.get(
-            #     'icmpv4_rate_limiter_n_packets', 'None')
-            # conf_dict['icmpv4_rate_limiter_n_seconds'] = instances.get(
-            #     'icmpv4_rate_limiter_n_seconds', 'None')
-            #
-            # conf_dict['policy_icmpv6_incoming'] = instances.get(
-            #     'policy_icmpv6_incoming', 'None')
-            # conf_dict['policy_icmpv6_outgoing'] = instances.get(
-            #     'policy_icmpv6_outgoing', 'None')
-            # conf_dict['icmpv6_rate_limiter_n_packets'] = instances.get(
-            #     'icmpv6_rate_limiter_n_packets', 'None')
-            # conf_dict['icmpv6_rate_limiter_n_seconds'] = instances.get(
-            #     'icmpv6_rate_limiter_n_seconds', 'None')
-
 
             # TODO these parameters are not defined
             conf_dict['aftr_mac_inet_side'] = mac_id
