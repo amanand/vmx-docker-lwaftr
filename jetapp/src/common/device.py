@@ -70,16 +70,20 @@ class Device(object):
         return self._mqtt_port
 
     def establish_connection(self):
-        LOG.info("Connected to JSD:ip=%s, port=%s, client-id = %s" %
+        LOG.info("Connecting to JSD:ip=%s, port=%s, client-id = %s" %
                  (self._host, self._rpc_port, self._client_id))
         channel = implementations.insecure_channel(self._host, self._rpc_port)
         stub = authentication_service_pb2.beta_create_Login_stub(channel)
-        request = authentication_service_pb2.LoginRequest(user_name=self._auth_user, password=self._auth_pwd,
+	try:
+            request = authentication_service_pb2.LoginRequest(user_name=self._auth_user, password=self._auth_pwd,
                                                           client_id=self._client_id)
-        login_response = stub.LoginCheck(request, RPC_TIMEOUT_SECONDS)
-        LOG.info("Received response from the LoginCheck: %s" %
-                 login_response.result)
-        return channel
+            login_response = stub.LoginCheck(request, RPC_TIMEOUT_SECONDS)
+            LOG.info("Received response from the LoginCheck: %s" %
+                     login_response.result)
+            return channel
+	except Exception as e:
+	    LOG.error("Failed to establish connection with VMX. %s" %e.message)
+	return None
 
     def __init__(self, host=DEFAULT_RPC_HOST, user=DEFAULT_USER_NAME, pwd=DEFAULT_PASSWORD,
                  rpc_port=DEFAULT_RPC_PORT, notification_port=DEFAULT_NOTIFICATION_PORT, **kvargs):
@@ -92,6 +96,9 @@ class Device(object):
         self._client_id = ''.join(random.choice(
             string.lowercase) for i in range(10))
         self._rpc_channel = self.establish_connection()
+	if self._rpc_channel == None:
+	    raise Exception('Failed to connect to VMX')
+
         # Initialize the instance variables
         self.connected = False
         self.opServer = None

@@ -24,6 +24,7 @@ __copyright__ = "Copyright (c) 2017 Juniper Networks, Inc."
 import argparse
 import sys
 import os
+import json
 from common.device import Device
 from threading import Thread
 from conf.conf_parser import ParseNotification
@@ -47,10 +48,26 @@ def Main():
                         type=int, default=DEFAULT_RPC_PORT)
     parser.add_argument("--notification_port", nargs='?', help="Port number of the JSD notification server. default: %(default)s",
                         type=int, default=DEFAULT_NOTIFICATION_PORT)
-    args = parser.parse_args()
-    device = Device(args.host, args.user, args.password,
-                    args.rpc_port, args.notification_port)
+    parser.add_argument("--config", nargs='?', help="JSON config file", type=str,default=None)
 
+    args = parser.parse_args()
+    if args.config is not None:
+	try:
+	    json_cfg = {}
+	    with open(args.config) as json_cfg_file:
+                json_cfg = json.load(json_cfg_file)
+            device = Device(json_cfg['host'], json_cfg['user'], json_cfg['password'],
+                                json_cfg['rpc_port'], json_cfg['notification_port'])
+	except Exception as e:
+	     LOG.error("exception :%s" %str(e.message))
+	     sys.exit(0)	    
+    else:
+        try:
+            device = Device(args.host, args.user, args.password,
+                    args.rpc_port, args.notification_port)
+        except Exception as e:
+            LOG.error("Exception:%s" % e.message)
+            sys.exit(0)
     dispatchFunction = ParseNotification(device)
     dispatchThread = Thread(target=dispatchFunction)
     dispatchThread.setDaemon(True)

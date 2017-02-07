@@ -5,7 +5,7 @@
 echo "$0: Launching jetapp server"
 while :
 do
-  python /jetapp/main.py
+  python /jetapp/src/main.py --config config.json 
   echo "jetapp terminated. Restarting in 5 seconds ..."
   sleep 5
 done

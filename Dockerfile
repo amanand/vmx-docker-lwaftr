@@ -101,8 +101,8 @@ COPY jetapp/yang/op/rpc-jet.py jet/
 COPY snmp/snmp_lwaftr.slax snmp/lw4over6.py snmp/
 
 COPY launch.sh launch_snabb.sh top.sh topl.sh README.md VERSION \
-  launch_jetapp.sh launch_opserver.sh \
-  launch_snabbvmx_manager.sh snabbvmx_manager.pl show_affinity.sh \
+  launch_jetapp.sh \
+  show_affinity.sh \
   monitor.sh add_bindings.sh launch_snabb_query.sh /
 
 RUN date >> /VERSION
