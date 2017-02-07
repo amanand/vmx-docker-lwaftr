@@ -47,6 +47,7 @@ COPY /jetapp/requirements.txt /jetapp/requirements.txt
 COPY /jetapp/setup.py /jetapp/setup.py
 COPY /jetapp/src/__init__.py /jetapp/src/__init__.py
 COPY /jetapp/src/main.py /jetapp/src/main.py
+COPY /jetapp/src/config.json /jetapp/src/config.json
 COPY /jetapp/src/requirements.txt /jetapp/src/requirements.txt
 COPY /jetapp/src/version.py /jetapp/src/version.py
 COPY /jetapp/src/common/__init__.py /jetapp/src/common/__init__.py
