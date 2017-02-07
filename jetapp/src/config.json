@@ -1,0 +1,7 @@
+{
+    "host":"128.0.0.1",
+    "user":"lab",
+    "password":"lab123",
+    "rpc_port":50051,
+    "notification_port":1883
+}
