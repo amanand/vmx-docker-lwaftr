@@ -1,16 +1,64 @@
-binding_table = {{context.binding_table |default('NONE') }},
+{% if context.hairpinning != None %}
+hairpinning  = {{context.hairpinning }},
+{% endif %}
+{% if context.binding_table != None %}
+binding_table  = {{context.binding_table }},
+{% endif %}
+{% if context.ipv6_address != None %}
+aftr_ipv6_ip  = {{context.ipv6_address }},
+{% endif %}
+{% if context.ipv4_address != None %}
+aftr_ipv4_ip  = {{context.ipv4_address }},
+{% endif %}
+{% if context.aftr_mac_inet_side != None %}
+aftr_mac_inet_side  = {{context.aftr_mac_inet_side }},
+{% endif %}
+{% if context.inet_mac != None %}
+inet_mac  = {{context.inet_mac }},
+{% endif %}
+{% if context.aftr_mac_b4_side != None %}
+aftr_mac_b4_side  = {{context.aftr_mac_b4_side }},
+{% endif %}
+{% if context.next_hop6_mac != None %}
+next_hop6_mac  = {{context.next_hop6_mac }},
+{% endif %}
+{% if context.ipv4_mtu != None %}
+ipv4_mtu  = {{context.ipv4_mtu }},
+{% endif %}
+{% if context.ipv6_mtu != None %}
+ipv6_mtu  = {{context.ipv6_mtu }},
+{% endif %}
 vlan_tagging = {{context.vlan_tagging |default('false') }},
-aftr_ipv6_ip = {{context.aftr_ipv6_ip |default('NONE')}},
-aftr_mac_inet_side = {{context.aftr_mac_inet_side |default('NONE')}},
-inet_mac = {{context.inet_mac |default('44:44:44:44:44:44')}},
-next_hop6_mac = {{context.next_hop6_mac |default('66:66:66:66:66:66')}},
-ipv6_mtu = {{context.ipv6_mtu |default('NONE')}},
-policy_icmpv6_incoming = {{context.policy_icmpv6_incoming |default('NONE')}},
-policy_icmpv6_outgoing = {{context.policy_icmpv6_outgoing |default('NONE')}},
-icmpv6_rate_limiter_n_packets = {{context.icmpv6_rate_limiter_n_packets |default('NONE')}},
-icmpv6_rate_limiter_n_seconds = {{context.icmpv6_rate_limiter_n_seconds |default('NONE')}},
-aftr_ipv4_ip = {{context.aftr_ipv4_ip |default('NONE')}},
-aftr_mac_b4_side = {{context.aftr_mac_b4_side |default('NONE')}},
-ipv4_mtu = {{context.ipv4_mtu |default('NONE')}},
-policy_icmpv4_incoming = {{context.policy_icmpv4_incoming |default('NONE')}},
-policy_icmpv4_outgoing = {{context.policy_icmpv4_outgoing |default('NONE')}},
+{% if context.v4_vlan_tag != None %}
+v4_vlan_tag = {{context.v4_vlan_tag}},
+{% endif %}
+{% if context.v6_vlan_tag != None %}
+v6_vlan_tag = {{context.v6_vlan_tag}},
+{% endif %}
+{% if context.policy_icmpv4_incoming != None %}
+policy_icmpv4_incoming  = {{context.policy_icmpv4_incoming }},
+{% endif %}
+{% if context.policy_icmpv4_outgoing != None %}
+policy_icmpv4_outgoing  = {{context.policy_icmpv4_outgoing }},
+{% endif %}
+{% if context.policy_icmpv6_incoming != None %}
+policy_icmpv6_incoming  = {{context.policy_icmpv6_incoming }},
+{% endif %}
+{% if context.policy_icmpv6_outgoing != None %}
+policy_icmpv6_outgoing  = {{context.policy_icmpv6_outgoing }},
+{% endif %}
+{% if context.max_fragments_per_reassembly_packet != None %}
+max_fragments_per_reassembly_packet  = {{context.max_fragments_per_reassembly_packet }},
+{% endif %}
+{% if context.max_ipv4_reassembly_packets != None %}
+max_ipv4_reassembly_packets  = {{context.max_ipv4_reassembly_packets }},
+{% endif %}
+{% if context.max_ipv6_reassembly_packets != None %}
+max_ipv6_reassembly_packets  = {{context.max_ipv6_reassembly_packets }},
+{% endif %}
+{% if context.icmpv6_rate_limiter_n_packets != None %}
+icmpv6_rate_limiter_n_packets  = {{context.icmpv6_rate_limiter_n_packets }},
+{% endif %}
+{% if context.icmpv6_rate_limiter_n_seconds != None %}
+icmpv6_rate_limiter_n_seconds  = {{context.icmpv6_rate_limiter_n_seconds }},
+{% endif %}

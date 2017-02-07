@@ -1,16 +1,30 @@
 return {
-  lwaftr = "{{context.cnf_file_name |default('NONE')}}",
+  lwaftr = "{{context.cnf_file_name if context.cnf_file_name}}",
   settings = {
-    ring_buffer_size = "{{context.ring_buffer_size |default('1024')}}",
+ {% if context.ring_buffer_size != None %}
+    ring_buffer_size = "{{context.ring_buffer_size}}"
+ {% endif %}
+ {% if context.ingress_drop_monitor != None %}
+    ingress_drop_monitor = "{{context.ingress_drop_monitor }}"
+ {% endif %}
+    ingress_drop_threshold = "{{context.ingress_drop_threshold if context.ingress_drop_threshold != 'None'}}"
+    ingress_drop_interval = "{{context.ingress_drop_interval if context.ingress_drop_interval != 'None' }}"
+    ingress_drop_wait = "{{context.ingress_drop_wait if context.ingress_drop_wait != "None"}}"
   },
   ipv6_interface = {
-    ipv6_address = "{{context.ipv6 |default('NONE')}}",
+    ipv6_address = "{{context.ipv6_address |default('NONE')}}",
     description = "{{context.ipv6_desc |default('NONE')}}",
     cache_refresh_interval = {{context.ipv6_cache_rate |default('NONE')}},
+    ipv6_ingress_filter = {{context.ipv6_ingress_filter |default('NONE')}},
+    ipv6_egress_filter = {{context.ipv6_egress_filter |default('NONE')}},
+    fragmentation = {{context.fragmentation | default('NONE')}},
   },
   ipv4_interface = {
-    ipv4_address = "{{context.ipv4 |default('NONE')}}",
+    ipv4_address = "{{context.ipv4_address |default('NONE')}}",
     description = "{{context.ipv4_desc |default('NONE')}}",
     cache_refresh_interval = {{context.ipv4_cache_rate |default('NONE')}},
+    ipv4_ingress_filter = {{context.ipv4_ingress_filter |default('NONE')}},
+    ipv4_egress_filter = {{context.ipv4_egress_filter |default('NONE')}},
+    fragmentation = {{context.fragmentation | default('NONE')}},
   },
 }
