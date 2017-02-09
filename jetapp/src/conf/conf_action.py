@@ -46,20 +46,11 @@ class ConfAction(object):
                  (str(instance_id), str(output)))
         return output
 
-    def get_process_id(self, instance_id):
-        pattern = r'"id xe' + str(instance_id) + r'"'
-        cmd = r"ps ax | grep " + pattern + \
-            r" | grep -v grep | awk '{print $1}'"
-        output = subprocess.check_output(cmd, shell=True)
-        pid = output
-        LOG.info('The pid of instance id %s is %s' % (instance_id, pid))
-        return pid
 
     def bindAction(self, binding_file):
         # Compile the binding file
         signal_sent = False
-        cmd = r"/usr/local/bin/snabb lwaftr compile-binding-table " + \
-            str(binding_file)
+        cmd = r"/usr/local/bin/snabb lwaftr compile-binding-table " + str(binding_file)
         try:
             output = subprocess.check_output(cmd, shell=True)
             LOG.info("Compiled the binding file, returned %s" % str(output))
@@ -70,10 +61,16 @@ class ConfAction(object):
         # Find the snabb instances and send sighup to all the instances
         p = subprocess.Popen(['ps', '-axw'], stdout=subprocess.PIPE)
         out, err = p.communicate()
+        snabb_search_string = SNABB_PROCESS_SEARCH_STRING
         for lines in out.splitlines():
-            if 'snabb' in lines:
+            if snabb_search_string in lines:
                 pid = int(lines.split(None, 1)[0])
-                os.kill(pid, signal.SIGHUP)
+                cmd = r"/usr/local/bin/snabb lwaftr control " + str(pid)+" reload"
+                try:
+                    output = subprocess.check_output(cmd, shell=True)
+                    LOG.info('Sent SIGHUP to instance %d' %pid)
+                except Exception as e:
+                    LOG.info("Failed to send SIGHUP to instance %d" %pid)
                 signal_sent = True
                 LOG.info("Successfully sent SIGHUP to the snabb instance")
                 break
@@ -83,9 +80,7 @@ class ConfAction(object):
         # Find the specific snabb instance or all depending on instance_id argument
         # Kill the relevant instances
         signal_sent = False
-        # TODO If restart_action is False then do we need to delete the existing cfg files so that Snabb app doesn't restart on its own
-        # Delete /tmp/snabbvmx-lwaftr-xe<instance_id>
-        if instance_id != None and restart_action == False:
+        if instance_id is not None and restart_action is False:
             cfg_file_name = SNABB_FILENAME + str(instance_id) + '.cfg'
             conf_file_name = SNABB_FILENAME + str(instance_id) + '.conf'
             os.remove(cfg_file_name)
@@ -107,6 +102,7 @@ class ConfAction(object):
                 LOG.info("Successfully sent SIGKILL to the snabb instance %s" % str(
                     lines.split(None, 1)[1]))
                 signal_sent = True
+
         return signal_sent
 
     def deleteAction(self):

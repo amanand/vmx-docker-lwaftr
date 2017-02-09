@@ -118,15 +118,11 @@ class ParseNotification:
                             br_address_idx += 1
                         elif re.search(regex_br_entries, lines):
                             match = re.search(regex_br_entries, lines)
-                            # print match.groups()
                             shift = 16 - int(match.group(4)) - \
                                 int(match.group(5))
-                            softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' % (match.group(2),
-                                                                                       match.group(
-                                                                                           3),
-                                                                                       match.group(
-                                                                                           1),
-                                                                                       br_address_idx))
+                            softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' %
+                                             (match.group(2),match.group(3),
+                                              match.group(1),br_address_idx))
                             if shift > 0:
                                 addresses[str(match.group(2))] = "{psid_length=%s, shift=%d}" % (match.group(4),
                                                                                                  shift)
@@ -135,7 +131,7 @@ class ParseNotification:
                                     str(match.group(2))] = "{psid_length=%s}" % match.group(4)
 
                         else:
-                            LOG.info("Ignoring this line >>>> %s" % lines)
+                            LOG.info("Ignoring this line: %s" % lines)
                 os.remove(new_binding_file)
             else:
                 LOG.critical(
@@ -172,7 +168,6 @@ class ParseNotification:
 
                             softwires.append('{ ipv4=%s, psid=%s, b4=%s, aftr=%s }' % (
                                 ipv4,psid,binding_ipv6_info,aftr))
-
                         else:
                             LOG.info("Incomplete binding table entry in the configuration %s" %str(items))
                 else:
@@ -202,9 +197,6 @@ class ParseNotification:
             LOG.info("Old binding file not present, so creating a new binding file")
         elif not filecmp.cmp(self.old_binding_filename, SNABB_BINDING_FILENAME_TMP):
             os.rename(SNABB_BINDING_FILENAME_TMP, self.old_binding_filename)
-
-            #os.remove(SNABB_BINDING_FILENAME_TMP)
-            #self.old_binding_filename = SNABB_BINDING_FILENAME
             self.binding_changed = True
             LOG.info("Binding Table has changed")
         else:
@@ -214,13 +206,12 @@ class ParseNotification:
             self.binding_changed = False
             # Send a sighup to all the snabb instances
             # LOG.info('Binding entries have changed')
-            # rc = action_handler.bindAction(self.old_binding_filename)
+            rc = action_handler.bindAction(self.old_binding_filename)
             # if not rc:
             #     LOG.critical("Failed to send SIGHUP to the Snabb instances")
             # else:
             #     LOG.info("Successfully sent SIGHUP to the Snabb instances")
         return
-
 
 
     def parse_snabb_config(self, config_dict):
@@ -257,6 +248,7 @@ class ParseNotification:
             # Verify that the old config contains this instance, if not then we
             # need to delete this instance
             self.instances[instance_id] = 1
+            cfg_dict['id'] = instance_id
             cfg_dict['cnf_file_name'] = SNABB_FILENAME.split('/')[-1] + str(instance_id) + '.conf'
 
             cfg_dict['ipv4_address'] = self.myget(instances,'ipv4_address')
@@ -281,6 +273,7 @@ class ParseNotification:
             cfg_dict['ring_buffer_size'] = None
 
             # Parse the conf file attributes
+            conf_dict['id'] = instance_id
             if self.old_binding_filename is not None:
                 conf_dict['binding_table'] = str(self.old_binding_filename).split('/')[-1]
             else:
@@ -296,10 +289,6 @@ class ParseNotification:
                 LOG.info('Failed to read the file %s due to exception: %s' %
                          (mac_path, e.message))
 
-            conf_dict['aftr_mac_b4_side'] = mac_id
-            conf_dict['aftr_mac_inet_side'] = mac_id
-
-            #if self.myget('ipv4_lan')
             conf_dict['v4_vlan_tag'] = self.myget(instances,'v4_vlan_tag')
             conf_dict['v6_vlan_tag'] = self.myget(instances, 'v6_vlan_tag')
             if self.myget(instances,'v4_vlan_tag') is not None or self.myget(instances, 'v6_vlan_tag') is not None:
@@ -333,32 +322,44 @@ class ParseNotification:
             # Take action based on whether the cfg or conf files have changed
             # or not
             ret_cfg, ret_conf = False, False
+            new_cfg_id_present = False
+            new_conf_id_present = False
             cnt = 0
             cfg_changed = False
-            LOG.info('New cfg dict = %s' % str(cfg_dict))
+            LOG.debug('New cfg dict = %s' % str(cfg_dict))
             if self.old_cfg is None:
                 ret_cfg = self.write_snabb_cfg_file(cfg_dict, instance_id)
                 if not ret_cfg:
                     LOG.critical("Failed to write the cfg file")
                     return
             else:
+                # Add the new cfg to the old_cfg dictionary
+                cnt = 0
                 for cfg_instance in self.old_cfg:
-                    if self.old_cfg['cnf_file_name'] == cfg_dict['cnf_file_name']:
-                        # Check if the configuration has changed for this new
-                        # instance
-                        if (self.dictdiff(cfg_instance, cfg_dict)):
+                    if cfg_instance['id'] == cfg_dict['id']:
+                        # Check if the configuration has changed for this new instance
+                        if cmp(cfg_instance, cfg_dict) != 0:
                             cfg_changed = True
                             self.old_cfg[cnt] = cfg_dict
+                            new_cfg_id_present = True
                             LOG.info("Cfg dictionary has changed")
                             break
                         else:
+                            new_cfg_id_present = True
+                            cfg_changed = False
                             LOG.info("Cfg dictionary has not changed")
+                            break
                     cnt += 1
+                # New cfg is not in the existing dict, add it
+                if not new_cfg_id_present:
+                    self.old_cfg.append(cfg_dict)
+                    cfg_changed = True
                 if (cfg_changed):
                     ret_cfg = self.write_snabb_cfg_file(cfg_dict, instance_id)
                     if not ret_cfg:
                         LOG.critical("Failed to write the cfg file")
                         return
+
             if self.old_conf is None:
                 ret_conf = self.write_snabb_conf_file(conf_dict, instance_id)
                 if not ret_conf:
@@ -367,16 +368,23 @@ class ParseNotification:
             else:
                 cnt = 0
                 conf_changed = False
+                new_conf_id_present = False
                 for conf_instance in self.old_conf:
-                    if self.old_conf['binding_table'] == conf_dict.get('binding_table', 'None'):
-                        if (self.dictdiff(conf_instance, conf_dict)):
+                    if (conf_instance['id'] == conf_dict['id']):
+                        if cmp(conf_instance, conf_dict) != 0:
                             conf_changed = True
                             self.old_conf[cnt] = conf_dict
+                            new_conf_id_present = True
                             LOG.info("Conf dictionary has changed")
                             break
                         else:
+                            new_conf_id_present = True
+                            conf_changed = False
                             LOG.info("Conf dictionary has not changed")
                     cnt = + 1
+                if not new_conf_id_present:
+                    self.old_conf.append(conf_dict)
+                    conf_changed = True
                 if (conf_changed):
                     ret_conf = self.write_snabb_conf_file(
                         conf_dict, instance_id)
@@ -386,14 +394,34 @@ class ParseNotification:
 
             if ret_conf or ret_cfg:
                 # Assume that the instances list is populated here
-                ret = action_handler.cfgAction(instance_id)
-                if not ret:
-                    LOG.critical("Failed to restart the Snabb instance")
+                if not new_cfg_id_present and not new_conf_id_present:
+                    # It is a new instance, so start it
+                    ret = action_handler.start_snabb_instance(instance_id)
+                else:
+                    ret = action_handler.cfgAction(instance_id)
+                    if not ret:
+                        LOG.critical("Failed to restart the Snabb instance")
+            else:
+                LOG.info("No config change hence did not restart Snabb instance %d id" %str(instance_id))
 
         # Few of the instances might have been deleted, we need to kill those
         # instances
         for keys in self.instances:
             if self.instances[keys] == 0:
+                # Remove the old_cfg item which is for this id
+                cnt = 0
+                for cfg_instance in self.old_cfg:
+                    if cfg_instance['id'] == keys:
+                        del self.old_cfg[cnt]
+                        break
+                    cnt += 1
+
+                cnt = 0
+                for conf_instance in self.old_conf:
+                    if conf_instance['id'] == keys:
+                        del self.old_conf[cnt]
+                        break
+                    cnt += 1
                 # Kill this instance
                 LOG.info(
                     "Instance id %d is not present, need to kill it" % int(keys))
@@ -412,9 +440,4 @@ class ParseNotification:
             config_dict = dispQ.get()
             dispQ.task_done()
             LOG.info("dequeued %s" % str(config_dict))
-
-            """
-            # Check if only the binding entries have changed, then sighup all snabb app
-            # check which instance has to be killed if conf or cfg file changed
-            """
             self.parse_snabb_config(config_dict)
