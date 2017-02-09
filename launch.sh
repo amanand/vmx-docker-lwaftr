@@ -613,14 +613,14 @@ fi
 if [ ! -z "$VCPIMAGE" ]; then
 
   if [ ! -z "${JETUSER}${IDENTITY}" ]; then
-    if [ -z "$JETUSER" ]; then
-      cd /tmp && numactl --membind=$NUMANODE /launch_snabbvmx_manager.sh $MGMTIP $IDENTITY $BINDINGS &
-    else
+    #if [ -z "$JETUSER" ]; then
+    #  cd /tmp && numactl --membind=$NUMANODE /launch_snabbvmx_manager.sh $MGMTIP $IDENTITY $BINDINGS &
+    #else
       cd /tmp && numactl --membind=$NUMANODE /launch_jetapp.sh $MGMTIP $JETUSER $JETPASS &
-    fi
+    #fi
     # no longer required. JET daemon on Junos does the job now
     # cd /tmp && numactl --membind=$NUMANODE /launch_snabb_query.sh $MGMTIP $IDENTITY &
-    cd /tmp && /launch_opserver.sh &
+    #cd /tmp && /launch_jetapp.sh &
   fi
 
   CMD="$QEMUVCPNUMA $qemu -M pc --enable-kvm -cpu host -smp $VCPCPU -m $VCPMEM \

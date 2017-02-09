@@ -6,4 +6,4 @@
 	url = https://github.com/Yelp/dumb-init.git
 [submodule "snabb"]
 	path = snabb
-	url = https://github.com/mwiget/snabb.git
+	url = https://github.com/amanand/snabb.git

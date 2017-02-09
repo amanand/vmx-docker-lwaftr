@@ -38,11 +38,11 @@ from common.app_globals import *
 def Main():
     parser = argparse.ArgumentParser(prog=os.path.basename(
         __file__), description='Snabb VMX integration JET app')
-    parser.add_argument("--host", required=True, help="Host address of the JSD server",
+    parser.add_argument("--host",  help="Host address of the JSD server",
                         type=str, default=DEFAULT_RPC_HOST)
-    parser.add_argument("--user", required=True, help="Username for authentication by JET server (default:%(default)s)",
+    parser.add_argument("--user",  help="Username for authentication by JET server (default:%(default)s)",
                         type=str, default=DEFAULT_USER_NAME)
-    parser.add_argument("--password", required=True, help="Password for authentication by JET server (default:%(default)s",
+    parser.add_argument("--password",  help="Password for authentication by JET server (default:%(default)s",
                         type=str, default=DEFAULT_PASSWORD)
     parser.add_argument("--rpc_port", nargs='?', help="Port number of the JSD gRPC server. default: %(default)s",
                         type=int, default=DEFAULT_RPC_PORT)
