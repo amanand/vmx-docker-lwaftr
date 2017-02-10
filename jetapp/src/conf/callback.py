@@ -27,6 +27,7 @@ class SnabbCallback:
                     sw_present = True
                     break
             if sw_present:
+		purge_request = True
                 # Push all the configuration into a new file
                 stub = openconfig_service_pb2.beta_create_OpenconfigRpcApi_stub(
                     self._dev.getChannel())
@@ -48,9 +49,14 @@ class SnabbCallback:
                             "ietf-softwire:softwire-config"]
                         LOG.debug("Notification message contains the config %s" % (
                             str(config_dict)))
+			purge_request = False
                         dispQ.put(config_dict)
+		if purge_request:
+                	LOG.info("Softwire-config deleted in the config")
+			config_dict['purge'] = True
+			dispQ.put(config_dict)
             else:
-                LOG.info("Softwire-config not present in the notification")
+                LOG.info("Softwire-config not present in the config")
         except Exception as e:
             LOG.critical("Exception: %s" % e.message)
             LOG.info('Exiting the JET app')

@@ -4,6 +4,7 @@ from jinja2 import Environment, FileSystemLoader
 from common.mylogging import LOG
 from conf_action import ConfAction
 from conf_globals import *
+import subprocess
 import filecmp
 from collections import OrderedDict
 from ftplib import FTP
@@ -14,8 +15,8 @@ class ParseNotification:
 
     def __init__(self, device):
         self.binding_changed = False
-        self.old_cfg = None
-        self.old_conf = None
+        self.old_cfg = []
+        self.old_conf = []
         self.old_binding_filename = None
         self._dev = device
         # All the instances will be added to this list
@@ -26,7 +27,6 @@ class ParseNotification:
         for keys in dictitem.keys():
             if keys.split(':')[-1] == key:
                 value = dictitem.get(keys)
-                LOG.info("Found key %s, value = %s" %(key,value))
                 return value
         LOG.info('Key %s not present' % str(key))
         return None
@@ -45,22 +45,6 @@ class ParseNotification:
             return False
         LOG.info('Successfully copied the file %s' % remote_filename)
         return True
-
-    def dictdiff(self, old_dict, new_dict):
-        if old_dict is None:
-            return True
-        if new_dict is None:
-            return True
-
-        for key in old_dict.keys():
-            if (not new_dict.has_key(key)):
-                return True
-            elif (old_dict[key] != new_dict[key]):
-                return True
-        for key in new_dict.keys():
-            if (not old_dict.has_key(key)):
-                return True
-        return False
 
     def write_file(self, filename, templatename, dictitems):
         PATH = os.path.dirname(os.path.abspath(__file__))
@@ -89,7 +73,7 @@ class ParseNotification:
         SNABB_CFG_FILE = SNABB_FILENAME + str(instance_id) + '.cfg'
         return self.write_file(SNABB_CFG_FILE, SNABB_CFG_TEMPLATE, cfg_dict)
 
-    def parse_for_binding(self, config_dict, action_handler):
+    def parse_for_binding(self, config_dict):
         br_addresses = OrderedDict()
         br_address_idx = -1
         softwires = []
@@ -97,7 +81,7 @@ class ParseNotification:
         remote_binding_table_filename = self.myget(config_dict['binding']['br'],'binding-table-file')
         # This section will take care of the binding files and binding table entries
         # Fetch this binding file from the device
-        if remote_binding_table_filename is not "None":
+        if remote_binding_table_filename is not None:
             # New binding table is provided by the user
             new_binding_file = r'/tmp/snabbvmx.binding.new'
             # touch the new file
@@ -201,16 +185,15 @@ class ParseNotification:
             LOG.info("Binding Table has changed")
         else:
             LOG.info("Binding Table has not changed")
-
         if (self.binding_changed):
-            self.binding_changed = False
-            # Send a sighup to all the snabb instances
-            # LOG.info('Binding entries have changed')
-            rc = action_handler.bindAction(self.old_binding_filename)
-            # if not rc:
-            #     LOG.critical("Failed to send SIGHUP to the Snabb instances")
-            # else:
-            #     LOG.info("Successfully sent SIGHUP to the Snabb instances")
+	    cmd = r"/usr/local/bin/snabb lwaftr compile-binding-table " + \
+		  str(self.old_binding_filename)
+	    try:
+		output = subprocess.check_output(cmd, shell=True)
+		LOG.info("Compiled the binding file, returned %s" % str(output))
+	    except Exception as e:
+		LOG.critical("Failed to compile the binding file returned %s" % str(e.message))
+		self.binding_changed = False
         return
 
 
@@ -218,14 +201,15 @@ class ParseNotification:
         if config_dict.get('purge', None) is not None:
             # Call the confAction to kill all the Snabb applications after
             # deleting the cfg/conf/binding files
-            self.old_cfg = None
-            self.old_conf = None
+            self.old_cfg = []
+            self.old_conf = []
             self.old_binding_filename = None
             self.instances = {}
+	    LOG.info("Purging the snabb configuration files and terminating instances")
             ca = ConfAction()
             ca.deleteAction()
             return
-
+        LOG.info("entered parse_snabb_config")
         # At first lets clear the present flag in all the instances
         for keys in self.instances:
             self.instances[keys] = 0
@@ -234,7 +218,7 @@ class ParseNotification:
         action_handler = ConfAction()
 
         # First the binding entry changes
-        self.parse_for_binding(config_dict, action_handler)
+        self.binding_changed = self.parse_for_binding(config_dict)
 
         # description is same for all the instances in the YANG schema
         cfg_dict = {}
@@ -249,7 +233,7 @@ class ParseNotification:
             # need to delete this instance
             self.instances[instance_id] = 1
             cfg_dict['id'] = instance_id
-            cfg_dict['cnf_file_name'] = SNABB_FILENAME.split('/')[-1] + str(instance_id) + '.conf'
+            cfg_dict['cnf_file_name'] = SNABB_FILENAME + str(instance_id) + '.conf'
 
             cfg_dict['ipv4_address'] = self.myget(instances,'ipv4_address')
             cfg_dict['ipv4_desc'] = descr
@@ -275,7 +259,7 @@ class ParseNotification:
             # Parse the conf file attributes
             conf_dict['id'] = instance_id
             if self.old_binding_filename is not None:
-                conf_dict['binding_table'] = str(self.old_binding_filename).split('/')[-1]
+                conf_dict['binding_table'] = str(self.old_binding_filename)
             else:
                 conf_dict['binding_table'] = None
 
@@ -329,6 +313,7 @@ class ParseNotification:
             LOG.debug('New cfg dict = %s' % str(cfg_dict))
             if self.old_cfg is None:
                 ret_cfg = self.write_snabb_cfg_file(cfg_dict, instance_id)
+                self.old_cfg.append(cfg_dict)
                 if not ret_cfg:
                     LOG.critical("Failed to write the cfg file")
                     return
@@ -362,6 +347,7 @@ class ParseNotification:
 
             if self.old_conf is None:
                 ret_conf = self.write_snabb_conf_file(conf_dict, instance_id)
+                self.old_conf.append(conf_dict)
                 if not ret_conf:
                     LOG.critical("Failed to write the conf file")
                     return
@@ -396,13 +382,23 @@ class ParseNotification:
                 # Assume that the instances list is populated here
                 if not new_cfg_id_present and not new_conf_id_present:
                     # It is a new instance, so start it
+                    LOG.info("New id added, starting new instance")
                     ret = action_handler.start_snabb_instance(instance_id)
                 else:
+                    LOG.info("The configuration changed, restarting the snabb instance id %s" %instance_id)
                     ret = action_handler.cfgAction(instance_id)
                     if not ret:
                         LOG.critical("Failed to restart the Snabb instance")
+	    elif self.binding_changed:
+		# Only the binding table has changed.
+		# Send SIGHUP to the instances
+		LOG.info("Only binding table has changed, sending SIGHUP")
+		ret = action_handler.bindAction(self.old_binding_filename)
+		if not ret:
+		    LOG.critical("Failed to reload the binding tables")
+		self.binding_changed = False
             else:
-                LOG.info("No config change hence did not restart Snabb instance %d id" %str(instance_id))
+                LOG.info("No config change hence did not restart Snabb instance %s id" %instance_id)
 
         # Few of the instances might have been deleted, we need to kill those
         # instances
@@ -422,14 +418,13 @@ class ParseNotification:
                         del self.old_conf[cnt]
                         break
                     cnt += 1
-                # Kill this instance
+		# Purge the files needed for this instance
                 LOG.info(
                     "Instance id %d is not present, need to kill it" % int(keys))
                 ret = action_handler.cfgAction(keys, False)
                 if not ret:
                     LOG.critical(
                         "Failed to kill the Snabb instance %d" % int(keys))
-
         return
 
     def __call__(self):

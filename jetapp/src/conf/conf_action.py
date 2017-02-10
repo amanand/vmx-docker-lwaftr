@@ -10,7 +10,7 @@ from conf_globals import *
 
 SNABB_PROCESS_SEARCH_STRING = 'snabbvmx-lwaftr-xe'
 SNABB_INSTANCE_LAUNCH_TEMPLATE = Template(
-    '/usr/local/bin/snabbsnabbvmx lwaftr --conf $cfg --id xe$id --pci $pci --mac $mac --sock %s.socket')
+    '/usr/local/bin/snabb snabbvmx lwaftr --conf $cfg --id xe$id --pci $pci --mac $mac')
 
 
 class ConfAction(object):
@@ -25,7 +25,7 @@ class ConfAction(object):
         pci_id = ''
         try:
             with open(pci_path) as f:
-                pci_id = f.read().strip()
+                pci_id = f.read().strip().split('/')[0]
         except Exception as e:
             LOG.info('Failed to read the file %s due to exception: %s' %
                      (pci_path, e.message))
@@ -38,26 +38,23 @@ class ConfAction(object):
                      (mac_path, e.message))
             return False
 
-        s.substitute(cfg=config_file_name, id=instance_id,
+        cmd = s.substitute(cfg=config_file_name, id=instance_id,
                      pci=pci_id, mac=mac_id)
         # TODO launch the process if required
-        output = subprocess.check_output(cmd, shell=True)
-        LOG.info('Tried to restart the snabb instance id %s, returned %s' %
+	output = 0
+	try:
+            output = subprocess.check_output(cmd, shell=True)
+            LOG.info('Tried to restart the snabb instance id %s, returned %s' %
                  (str(instance_id), str(output)))
+	except Exception as e:
+	    LOG.info("Failed to start the snabb instance, exception %s" %e.message)
+
         return output
 
 
     def bindAction(self, binding_file):
         # Compile the binding file
         signal_sent = False
-        cmd = r"/usr/local/bin/snabb lwaftr compile-binding-table " + str(binding_file)
-        try:
-            output = subprocess.check_output(cmd, shell=True)
-            LOG.info("Compiled the binding file, returned %s" % str(output))
-        except Exception as e:
-            LOG.info(
-                "Failed to compile the binding file, exception: %s" % e.message)
-            return signal_sent
         # Find the snabb instances and send sighup to all the instances
         p = subprocess.Popen(['ps', '-axw'], stdout=subprocess.PIPE)
         out, err = p.communicate()
@@ -83,8 +80,11 @@ class ConfAction(object):
         if instance_id is not None and restart_action is False:
             cfg_file_name = SNABB_FILENAME + str(instance_id) + '.cfg'
             conf_file_name = SNABB_FILENAME + str(instance_id) + '.conf'
-            os.remove(cfg_file_name)
-            os.remove(conf_file_name)
+	    try:
+                os.remove(cfg_file_name)
+                os.remove(conf_file_name)
+	    except OSError:
+		pass
             LOG.info("Removed the file %s and %s as the instance %d was deleted" % (
                 cfg_file_name, conf_file_name, int(instance_id)))
 
@@ -98,8 +98,8 @@ class ConfAction(object):
         for lines in out.splitlines():
             if snabb_search_string in lines:
                 pid = int(lines.split(None, 1)[0])
-                os.kill(pid, signal.SIGKILL)
-                LOG.info("Successfully sent SIGKILL to the snabb instance %s" % str(
+                os.kill(pid, signal.SIGTERM)
+                LOG.info("Successfully sent SIGTERM to the snabb instance %s" % str(
                     lines.split(None, 1)[1]))
                 signal_sent = True
 
@@ -111,15 +111,18 @@ class ConfAction(object):
         for f in os.listdir('/tmp'):
             if snabb_search_string in f:
                 LOG.info('Deleting the file %s' % str(f))
-                os.remove(os.path.join('/tmp/', f))
+		try:
+                    os.remove(os.path.join('/tmp/', f))
+		except OSError:
+		    pass
         signal_sent = False
         p = subprocess.Popen(['ps', '-axw'], stdout=subprocess.PIPE)
         out, err = p.communicate()
         for lines in out.splitlines():
             if snabb_search_string in lines:
                 pid = int(lines.split(None, 1)[0])
-                os.kill(pid, signal.SIGKILL)
-                LOG.info("Successfully sent SIGKILL to the snabb instance %s" % str(
+                os.kill(pid, signal.SIGTERM)
+                LOG.info("Successfully sent SIGTERM to the snabb instance %s" % str(
                     lines.split(None, 1)[1]))
                 signal_sent = True
         return signal_sent
