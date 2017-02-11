@@ -43,9 +43,9 @@ class ConfAction(object):
         # TODO launch the process if required
 	output = 0
 	try:
-            output = subprocess.check_output(cmd, shell=True)
+	    pid = subprocess.Popen(["sudo",cmd], stdout=subprocess.PIPE,stderr=subprocess.STDOUT).pid
             LOG.info('Tried to restart the snabb instance id %s, returned %s' %
-                 (str(instance_id), str(output)))
+                 (str(instance_id), str(pid)))
 	except Exception as e:
 	    LOG.info("Failed to start the snabb instance, exception %s" %e.message)
 
