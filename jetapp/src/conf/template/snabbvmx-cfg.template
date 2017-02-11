@@ -19,10 +19,10 @@ return {
   },
   ipv6_interface = {
 {% if context.ipv6_address != None %}
-    ipv6_address  = {{context.ipv6_address}},
+    ipv6_address  = "{{context.ipv6_address}}",
 {% endif %}
 {% if context.description != None %}
-    description  = {{context.ipv6_desc}},
+    description  = "{{context.ipv6_desc}}",
 {% endif %}
 {% if context.cache_refresh_interval != None %}
     cache_refresh_interval  = {{context.ipv6_cache_rate}},
@@ -39,10 +39,10 @@ return {
   },
   ipv4_interface = {
 {% if context.ipv4_address != None %}
-    ipv4_address  = {{context.ipv4_address}},
+    ipv4_address  = "{{context.ipv4_address}}",
 {% endif %}
 {% if context.description != None %}
-    description  = {{context.ipv4_desc}},
+    description  = "{{context.ipv4_desc}}",
 {% endif %}
 {% if context.cache_refresh_interval != None %}
     cache_refresh_interval  = {{context.ipv4_cache_rate}},
